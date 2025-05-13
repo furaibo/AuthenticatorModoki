@@ -79,6 +79,7 @@ class ViewAdd(ft.View):
         # dictへのトークン情報の追加
         dt_now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         token_item = {
+            "index": len(self.token_dict) + 1,
             "user": self.text_field_user.value,
             "secret": self.text_field_secret.value,
             "issuer": self.text_field_issuer.value,

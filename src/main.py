@@ -2,8 +2,11 @@ import flet as ft
 import os
 import json
 import qrcode
+import pyotp
+import pyperclip
 from pathlib import Path
 from urllib.parse import urlparse, parse_qsl
+
 from otp_text import OtpText
 from otp_timebar import OtpTimeBar
 from view_add import ViewAdd
@@ -33,8 +36,8 @@ def main(page: ft.Page):
     )
 
     # ウィンドウサイズの設定
-    page.window.width = 500
-    page.window.height = 800
+    page.window.width = 520
+    page.window.height = 920
 
     # アプリ用のデータパス
     # Note: Fletの標準の保存用パスを利用
@@ -53,17 +56,24 @@ def main(page: ft.Page):
         if not app_data_path.exists():
             app_data_path.mkdir()
 
+        # 並び順の保存
+        # Note: 検索条件によってListView上の数が減少している場合は値を保存しない
+        if len(token_data_dict) == len(list_view_token_info.controls):
+            for index, container in enumerate(list_view_token_info.controls, start=1):
+                key = container.data
+                token_data_dict[key]["index"] = index
+
         # ファイルの保存処理
         with open(token_data_json_path, "w", encoding="utf-8") as f:
             json_str = json.dumps(token_data_dict, indent=4)
             f.write(json_str)
 
     # トークン情報描画処理
-    def update_token_info_rows(query=""):
-        rows_list = []
+    def update_token_info_containers(query=""):
+        list_view_items_list = []
 
         # 行データの再描画処理
-        for key, info in token_data_dict.items():
+        for key, info in sorted(token_data_dict.items(), key=lambda x: x[1]["index"]):
             if query == "" or query in info["user"]:
                 # OTP情報の行データ定義
                 # Note: 名称表示に加えて、QRコードDL・編集・削除ボタンを設定
@@ -71,7 +81,7 @@ def main(page: ft.Page):
                     ft.Text(info["user"], width=300, size=16),
                     ft.IconButton(ft.Icons.QR_CODE, data=key,
                                   on_click=lambda e: dialog_select_qrcode_save_path.save_file(
-                                        "QRコード保存先の指定",
+                                        "QRコード画像保存先の指定",
                                         allowed_extensions=["png"])),
                     ft.IconButton(ft.Icons.EDIT, data=key,
                                   on_click=lambda e: event_click_edit_button(e)),
@@ -85,19 +95,25 @@ def main(page: ft.Page):
                 # OTPの有効期限を表示する残り時間のバー表示
                 row_otp_time_bar = ft.Row(controls=[OtpTimeBar()])
 
-                # リストへの行追加
-                rows_list.extend([
+                # Columnおよびコンテナの定義
+                token_info_column = ft.Column(controls=[
                     row_top, row_otp, row_spacer1,
                     row_otp_time_bar, row_spacer2
                 ])
+                token_info_container = ft.Container(
+                    content=token_info_column, data=key,
+                    on_long_press=lambda e: event_long_press_token_info(e))
 
-        list_view_totp_info.controls = rows_list
-        list_view_totp_info.update()
+                # リストへの行追加
+                list_view_items_list.append(token_info_container)
+
+        list_view_token_info.controls = list_view_items_list
+        list_view_token_info.update()
 
     # 検索時の動作
-    def event_search_token_rows(e):
+    def event_search_token_info(e):
         query = e.control.value
-        update_token_info_rows(query)
+        update_token_info_containers(query)
 
     # QRコードファイル保存先パスの指定
     def event_save_qrcode(e: ft.FilePickerResultEvent):
@@ -128,13 +144,40 @@ def main(page: ft.Page):
             actions=[
                 ft.TextButton("Yes", on_click=lambda _: [
                                   token_data_dict.pop(key),
-                                  update_token_info_rows(),
+                                  update_token_info_containers(),
                                   page.close(dialog)]),
                 ft.TextButton("No", on_click=lambda _: page.close(dialog))
             ],
             actions_alignment=ft.MainAxisAlignment.CENTER
         )
         page.open(dialog)
+
+    # 並び替え時の動作
+    # Note: controls内の要素のindex入れ替え処理
+    def event_sort_token_info(e):
+        # 見た目上の入れ替え処理
+        controls = e.control.controls
+        controls[e.old_index], controls[e.new_index] = \
+            controls[e.new_index], controls[e.old_index]
+
+        # indexの入れ替え処理
+        key1 = controls[e.old_index].data
+        key2 = controls[e.new_index].data
+        token_data_dict[key1]["index"], token_data_dict[key2]["index"] = \
+            token_data_dict[key2]["index"], token_data_dict[key1]["index"]
+
+        # ページの更新・index情報の保存
+        page.update()
+        save_token_data_json()
+
+    # 長くクリックしたときの動作
+    # Note: 現在のOTPの文字列をクリップボードに保存
+    def event_long_press_token_info(e):
+        key = e.control.data
+        totp = pyotp.TOTP(token_data_dict[key]["secret"])
+        current_otp = str(totp.now())
+        pyperclip.copy(current_otp)
+        page.open(ft.SnackBar(ft.Text("ワンタイムパスワードをコピーしました")))
 
     # routeごとの分岐処理
     def route_change(route: str):
@@ -145,7 +188,7 @@ def main(page: ft.Page):
             root_view = page.views[0]
             page.views.clear()
             page.views.append(root_view)
-            update_token_info_rows()
+            update_token_info_containers()
             save_token_data_json()
         elif path == "/add":
             view_add = ViewAdd(token_data_dict)
@@ -175,14 +218,15 @@ def main(page: ft.Page):
 
     # 検索用テキストフィールドの追加
     text_field_query = ft.TextField(
-        label="検索", width=400, on_submit=lambda e: event_search_token_rows(e))
+        label="検索", width=400, on_submit=lambda e: event_search_token_info(e))
     row_text_field_query = ft.Row(controls=[text_field_query])
     page.add(row_text_field_query)
 
     # 表示用ListViewの定義と各行の表示
-    list_view_totp_info = ft.ListView(width=480, height=600)
-    page.add(list_view_totp_info)
-    update_token_info_rows()
+    list_view_token_info = ft.ReorderableListView(
+        width=500, height=750, on_reorder=lambda e: event_sort_token_info(e))
+    page.add(list_view_token_info)
+    update_token_info_containers()
 
     # pageの表示
     page.update()
