@@ -66,8 +66,11 @@ class ViewAdd(ft.View):
             else:
                 # 読み取り失敗時のダイアログ表示
                 dialog = ft.AlertDialog(
-                    content=ft.Text("有効なファイルをアップロードしてください。"),
-                    actions=[ft.TextButton("OK", on_click=lambda _: self.page.close(dialog))],
+                    content=ft.Text(
+                        "有効なファイルをアップロードしてください。"),
+                    actions=[ft.TextButton(
+                        "OK",
+                        on_click=lambda _: self.page.close(dialog))],
                     actions_alignment=ft.MainAxisAlignment.CENTER
                 )
                 self.page.open(dialog)
@@ -142,7 +145,8 @@ class ViewAdd(ft.View):
         self.text_field_auth_uri = ft.TextField(
             label="認証URI", width=400, read_only=True)
         self.text_field_note = ft.TextField(
-            label="説明文・メモ書き", width=400, multiline=True, min_lines=3)
+            label="説明文・メモ書き", width=400,
+            multiline=True, min_lines=3)
 
         # ボタンの定義
         self.button_add_new_token = ft.CupertinoFilledButton(
@@ -151,17 +155,27 @@ class ViewAdd(ft.View):
 
         # 行データの定義
         row_spacer = ft.Row(controls=[ft.Divider(height=10)])
-        row_register_header = ft.Row(controls=[ft.Text("QRコード登録", size=20)])
-        row_checkbox_enable_qrcode = ft.Row(controls=[self.checkbox_enable_qrcode])
-        row_select_qrcode_file = ft.Row(controls=[
-            self.text_field_qrcode_file_path, self.button_select_qrcode_file])
-        row_otp_token_info_header = ft.Row(controls=[ft.Text("OTPトークン情報", size=20)])
-        row_text_field_user = ft.Row(controls=[self.text_field_user])
-        row_text_field_secret = ft.Row(controls=[self.text_field_secret])
-        row_text_field_issuer = ft.Row(controls=[self.text_field_issuer])
-        row_text_field_auth_uri = ft.Row(controls=[self.text_field_auth_uri])
-        row_text_field_note = ft.Row(controls=[self.text_field_note])
-        row_button_add_new_token = ft.Row(controls=[self.button_add_new_token])
+        row_register_header = ft.Row(
+            controls=[ft.Text("QRコード登録", size=20)])
+        row_checkbox_enable_qrcode = ft.Row(
+            controls=[self.checkbox_enable_qrcode])
+        row_select_qrcode_file = ft.Row(
+            controls=[self.text_field_qrcode_file_path,
+                      self.button_select_qrcode_file])
+        row_otp_token_info_header = ft.Row(
+            controls=[ft.Text("OTPトークン情報", size=20)])
+        row_text_field_user = ft.Row(
+            controls=[self.text_field_user])
+        row_text_field_secret = ft.Row(
+            controls=[self.text_field_secret])
+        row_text_field_issuer = ft.Row(
+            controls=[self.text_field_issuer])
+        row_text_field_auth_uri = ft.Row(
+            controls=[self.text_field_auth_uri])
+        row_text_field_note = ft.Row(
+            controls=[self.text_field_note])
+        row_button_add_new_token = ft.Row(
+            controls=[self.button_add_new_token])
 
         # Viewに対する行の追加
         self.controls.extend([

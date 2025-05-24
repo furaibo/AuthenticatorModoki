@@ -11,7 +11,7 @@ class OtpTimeBar(ft.ProgressBar):
         self.width = 450
 
     # did_mountおよびwill_unmountの定義
-    # Note: Flet指定のメソッドでそれぞれpage.controlsへの割当/削除時に実行される
+    # Note: それぞれpage.controlsへの割当/削除時に実行される
     def did_mount(self):
         self.running = True
         self.page.run_task(self.update_time_bar)

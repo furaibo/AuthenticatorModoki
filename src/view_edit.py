@@ -48,7 +48,8 @@ class ViewEdit(ft.View):
 
         # Note: Noteのみイベントから呼び出せるようにselfつきで宣言
         self.text_field_note = ft.TextField(
-            label="説明文・メモ書き", width=400, multiline=True, min_lines=3,
+            label="説明文・メモ書き", width=400,
+            multiline=True, min_lines=3,
             value=token_dict[key]["note"])
 
         # ボタンの定義

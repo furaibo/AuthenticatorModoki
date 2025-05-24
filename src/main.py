@@ -31,8 +31,10 @@ def get_app_data_path() -> Path:
 def main(page: ft.Page):
     # トップページ設定
     page.title = "Authenticatorもどき"
-    page.appbar = ft.AppBar(title=ft.Text("Authenticatorもどき"),
-        actions=[ft.IconButton(ft.Icons.ADD, on_click=lambda _: page.go("/add"))]
+    page.appbar = ft.AppBar(
+        title=ft.Text("Authenticatorもどき"),
+        actions=[ft.IconButton(
+            ft.Icons.ADD, on_click=lambda _: page.go("/add"))]
     )
 
     # ウィンドウサイズの設定
@@ -57,9 +59,10 @@ def main(page: ft.Page):
             app_data_path.mkdir()
 
         # 並び順の保存
-        # Note: 検索条件によってListView上の数が減少している場合は値を保存しない
+        # Note: 検索中でListViewのアイテム数減少の場合は値を保存しない
         if len(token_data_dict) == len(list_view_token_info.controls):
-            for index, container in enumerate(list_view_token_info.controls, start=1):
+            for index, container in enumerate(
+                    list_view_token_info.controls, start=1):
                 key = container.data
                 token_data_dict[key]["index"] = index
 
@@ -73,20 +76,25 @@ def main(page: ft.Page):
         list_view_items_list = []
 
         # 行データの再描画処理
-        for key, info in sorted(token_data_dict.items(), key=lambda x: x[1]["index"]):
+        for key, info in sorted(
+                token_data_dict.items(), key=lambda x: x[1]["index"]):
             if query == "" or query in info["user"]:
                 # OTP情報の行データ定義
                 # Note: 名称表示に加えて、QRコードDL・編集・削除ボタンを設定
                 row_top = ft.Row(controls=[
                     ft.Text(info["user"], width=300, size=16),
-                    ft.IconButton(ft.Icons.QR_CODE, data=key,
-                                  on_click=lambda e: dialog_select_qrcode_save_path.save_file(
-                                        "QRコード画像保存先の指定",
-                                        allowed_extensions=["png"])),
-                    ft.IconButton(ft.Icons.EDIT, data=key,
-                                  on_click=lambda e: event_click_edit_button(e)),
-                    ft.IconButton(ft.Icons.REMOVE, data=key,
-                                  on_click=lambda e: event_click_remove_button(e))
+                    ft.IconButton(
+                        ft.Icons.QR_CODE, data=key,
+                        on_click= lambda e: \
+                            dialog_select_qrcode_save_path.save_file(
+                                "QRコード画像保存先の指定",
+                                allowed_extensions=["png"])),
+                    ft.IconButton(
+                        ft.Icons.EDIT, data=key,
+                        on_click=lambda e: event_click_edit_button(e)),
+                    ft.IconButton(
+                        ft.Icons.REMOVE, data=key,
+                        on_click=lambda e: event_click_remove_button(e))
                 ])
                 row_otp = ft.Row(controls=[OtpText(info["secret"])])
                 row_spacer1 = ft.Row(controls=[ft.Divider(height=15)])
@@ -142,11 +150,15 @@ def main(page: ft.Page):
         dialog = ft.AlertDialog(
             content=ft.Text("このOTPトークンを削除しますか？"),
             actions=[
-                ft.TextButton("Yes", on_click=lambda _: [
-                                  token_data_dict.pop(key),
-                                  update_token_info_containers(),
-                                  page.close(dialog)]),
-                ft.TextButton("No", on_click=lambda _: page.close(dialog))
+                ft.TextButton(
+                    "Yes",
+                    on_click=lambda _: [
+                          token_data_dict.pop(key),
+                          update_token_info_containers(),
+                          page.close(dialog)]),
+                ft.TextButton(
+                    "No",
+                    on_click=lambda _: page.close(dialog))
             ],
             actions_alignment=ft.MainAxisAlignment.CENTER
         )
@@ -177,7 +189,8 @@ def main(page: ft.Page):
         totp = pyotp.TOTP(token_data_dict[key]["secret"])
         current_otp = str(totp.now())
         pyperclip.copy(current_otp)
-        page.open(ft.SnackBar(ft.Text("ワンタイムパスワードをコピーしました")))
+        show_text = ft.Text("ワンタイムパスワードをコピーしました")
+        page.open(ft.SnackBar(show_text))
 
     # routeごとの分岐処理
     def route_change(route: str):
@@ -213,18 +226,21 @@ def main(page: ft.Page):
 
     # FilePickerの定義
     # Note: appendによるpage/viewへの追加がないとエラー発生
-    dialog_select_qrcode_save_path = ft.FilePicker(on_result=event_save_qrcode)
+    dialog_select_qrcode_save_path = \
+        ft.FilePicker(on_result=event_save_qrcode)
     page.overlay.append(dialog_select_qrcode_save_path)
 
     # 検索用テキストフィールドの追加
     text_field_query = ft.TextField(
-        label="検索", width=400, on_submit=lambda e: event_search_token_info(e))
+        label="検索", width=400,
+        on_submit=lambda e: event_search_token_info(e))
     row_text_field_query = ft.Row(controls=[text_field_query])
     page.add(row_text_field_query)
 
     # 表示用ListViewの定義と各行の表示
     list_view_token_info = ft.ReorderableListView(
-        width=500, height=750, on_reorder=lambda e: event_sort_token_info(e))
+        width=500, height=750,
+        on_reorder=lambda e: event_sort_token_info(e))
     page.add(list_view_token_info)
     update_token_info_containers()
 
